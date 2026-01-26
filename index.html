@@ -203,14 +203,14 @@
   </div>
 
   <img
-    src="https://www.odu.edu/themes/custom/odu/images/odu-logo.svg"
-    alt="Old Dominion University Logo"
+    src="/logo.png"
+    alt="ODU ELC Logo"
     class="header-logo"
   >
 </div>
 
 <div class="container">
-  <h2>Workshop Quote Generator</h2>
+  <h2>Special Program Cost Estimate Generator</h2>
 
   <div class="inputs">
     <div>
@@ -236,21 +236,27 @@
   </div>
 
   <div class="divider"></div>
-  <h2>Session Type</h2>
+  <h2>Hours of Instructions for each student</h2>
 
-  <div class="section1 mandatory">
-    <div class="item">
-      <input type="radio" name="sessionType" value="inperson" checked onchange="calculate()">
-      <span>In-Person Session</span>
-      <input class="price" type="text" value="$200 per person" data-price="200" disabled>
-      <span>$<span id="inpersonCost">0.00</span></span>
+  <div class="section1 mandatory" id="instructionHoursSection">
+    <div class="item" data-type="hours">
+      <input type="checkbox" onchange="calculate()">
+      <span class="label hours-group" data-label-base="Hours of English Language Instruction for each student">
+        Hours of English Language Instruction
+        <input class="hours" type="number" value="1" min="1" onchange="calculate()">
+      </span>
+      <input class="price" type="text" value="$15 per hour" data-price="15" disabled>
+      <span>$0.00</span>
     </div>
 
-    <div class="item">
-      <input type="radio" name="sessionType" value="virtual" onchange="calculate()">
-      <span>Virtual Session</span>
-      <input class="price" type="text" value="$100 per person" data-price="100" disabled>
-      <span>$<span id="virtualCost">0.00</span></span>
+    <div class="item" data-type="hours">
+      <input type="checkbox" onchange="calculate()">
+      <span class="label hours-group" data-label-base="Hours of Academic Coursework (e.g. Engineering, Business, etc.)">
+        Hours of Academic Coursework (e.g. Engineering, Business, etc.)
+        <input class="hours" type="number" value="1" min="1" onchange="calculate()">
+      </span>
+      <input class="price" type="text" value="$15 per hour" data-price="15" disabled>
+      <span>$0.00</span>
     </div>
   </div>
 
@@ -258,42 +264,39 @@
   <h2>Optional Costs</h2>
 
   <div class="section optional">
-
-    <div class="item physical-only" data-type="person">
+    <div class="item physical-only" data-type="person-week">
       <input type="checkbox" onchange="calculate()">
-      <span class="label-person">Transportation</span>
-      <input class="price" type="text" value="$30 per student" data-price="30" disabled>
+      <span class="label" data-label-base="Transportation Fee">Transportation fee</span>
+      <input class="price" type="text" value="$100 per week" data-price="100" disabled>
       <span>$0.00</span>
     </div>
 
     <div class="item physical-only" data-type="person-night">
       <input type="checkbox" onchange="calculate()">
-      <span class="label-person-night">Accommodation</span>
-      <input class="price" type="text" value="$50 per night" data-price="50" disabled>
+      <span class="label" data-label-base="Accommodation">Accommodation</span>
+      <input class="price" type="text" value="$60 per night" data-price="60" disabled>
       <span>$0.00</span>
     </div>
 
     <div class="item physical-only" data-type="person-day">
       <input type="checkbox" onchange="calculate()">
-      <span class="label-person-day">Feeding</span>
-      <input class="price" type="text" value="$25 per day" data-price="25" disabled>
+      <span class="label" data-label-base="Meals">Meals</span>
+      <input class="price" type="text" value="$50 per day" data-price="50" disabled>
       <span>$0.00</span>
     </div>
 
-    <div class="item" data-type="hours">
-      <input type="checkbox" checked onclick="return false;">
-      <span class="label-hours hours-group">
-        Hours of Instruction
-        <input class="hours" type="number" id="hours" value="1" min="1" onchange="calculate()">
-      </span>
-      <input class="price" type="text" value="$40 per hour" data-price="40" disabled>
+    <div class="item physical-only" data-type="person-week">
+      <input type="checkbox" onchange="calculate()">
+      <span class="label" data-label-base="Activity Fee">Activity Fee</span>
+      <input class="price" type="text" value="$50 per week" data-price="50" disabled>
       <span>$0.00</span>
     </div>
-
   </div>
 
+  <!-- Updated: only show subtotal per student, admin fee, and total cost -->
   <div class="totals">
-    <div>Cost Per Student: $<span id="perStudent">0.00</span></div>
+    <div>Subtotal Per Student: $<span id="subtotalPerStudent">0.00</span></div>
+    <div>Program Administration Fee: $<span id="adminFeeTotal">0.00</span></div>
     <div><b>Total Cost: $<span id="total">0.00</span></b></div>
   </div>
 
@@ -301,24 +304,41 @@
 </div>
 
 <script>
+const ADMIN_FEE_MULTIPLIER = 1.6;
+
+function initLabelBasesOnce() {
+  document.querySelectorAll(".label").forEach(labelEl => {
+    if (!labelEl.dataset.labelBase || labelEl.dataset.labelBase.trim() === "") {
+      labelEl.dataset.labelBase = labelEl.textContent.trim();
+    }
+  });
+}
+
 function calculate() {
-  const students = parseInt(document.getElementById("students").value) || 0;
-  const hours = parseInt(document.getElementById("hours").value) || 0;
+  initLabelBasesOnce();
+
+  const students = parseInt(document.getElementById("students").value, 10) || 0;
 
   const startVal = document.getElementById("startDate").value;
   const endVal = document.getElementById("endDate").value;
 
   let days = 0;
   let nights = 0;
+  let weeks = 0;
 
   if (startVal && endVal) {
     const start = new Date(startVal);
     const end = new Date(endVal);
+
     if (end >= start) {
       days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
       nights = Math.max(days - 1, 0);
+      weeks = Math.max(1, Math.ceil(days / 7));
       document.getElementById("dateSummary").textContent =
-        days + " day(s), " + nights + " night(s)";
+        days + " day(s), " + nights + " night(s), " + weeks + " week(s)";
+    } else {
+      document.getElementById("dateSummary").textContent =
+        "End date cannot be earlier than the start date.";
     }
   } else {
     document.getElementById("dateSummary").textContent =
@@ -326,70 +346,72 @@ function calculate() {
   }
 
   const studentText = students === 1 ? "1 student" : students + " student(s)";
-  document.querySelector(".label-person").textContent =
-    "Transportation for " + studentText;
-  document.querySelector(".label-person-night").textContent =
-    "Accommodation for " + studentText;
-  document.querySelector(".label-person-day").textContent =
-    "Feeding for " + studentText;
-  document.querySelector(".label-hours").childNodes[0].nodeValue =
-    "Hours of Instruction for each student";
 
-  let total = 0;
+  /* Rebuild labels safely (prevents repeats) */
+  document.querySelectorAll(".section.optional .item .label").forEach(labelEl => {
+    const base = (labelEl.dataset.labelBase || "").trim();
+    const item = labelEl.closest(".item");
+    if (!item) return;
 
-  const session =
-    document.querySelector('input[name="sessionType"]:checked').value;
+    const type = item.dataset.type;
 
-  if (session === "inperson") {
-    const cost = 200 * students;
-    document.getElementById("inpersonCost").textContent = cost.toFixed(2);
-    document.getElementById("virtualCost").textContent = "0.00";
-    total += cost;
-  } else {
-    const cost = 100 * students;
-    document.getElementById("virtualCost").textContent = cost.toFixed(2);
-    document.getElementById("inpersonCost").textContent = "0.00";
-    total += cost;
-  }
-
-  document.querySelectorAll(".physical-only").forEach(item => {
-    const checkbox = item.querySelector("input[type='checkbox']");
-    const costCell = item.querySelector("span:last-child");
-
-    if (session === "virtual") {
-      checkbox.checked = false;
-      checkbox.disabled = true;
-      costCell.textContent = "$0.00";
-    } else {
-      checkbox.disabled = false;
+    if (type === "person" || type === "person-day" || type === "person-night" || type === "person-week") {
+      labelEl.textContent = base + " for " + studentText;
     }
   });
 
-  document.querySelectorAll(".section.optional .item").forEach(item => {
-    const checkbox = item.querySelector("input[type='checkbox']");
-    if (!checkbox || !checkbox.checked) return;
+  /* Reset all cost cells first */
+  document.querySelectorAll(".item").forEach(item => {
+    const costCell = item.querySelector("span:last-child");
+    if (costCell) costCell.textContent = "$0.00";
+  });
 
-    const rate = parseFloat(item.querySelector(".price").dataset.price) || 0;
+  let subtotalTotal = 0;
+
+  function calcItemCost(item) {
+    const checkbox = item.querySelector("input[type='checkbox']");
+    if (!checkbox || !checkbox.checked) return 0;
+
+    const rate = parseFloat(item.querySelector(".price")?.dataset.price) || 0;
     const type = item.dataset.type;
     let cost = 0;
 
-    if (type === "person") cost = rate * students;
-    if (type === "person-night" && startVal && endVal)
-      cost = rate * students * nights;
-    if (type === "person-day" && startVal && endVal)
-      cost = rate * students * days;
-    if (type === "hours") cost = rate * students * hours;
+    if (type === "person-week" && days > 0) cost = rate * students * weeks;
+    if (type === "person-night" && days > 0) cost = rate * students * nights;
+    if (type === "person-day" && days > 0) cost = rate * students * days;
 
-    item.querySelector("span:last-child").textContent =
-      "$" + cost.toFixed(2);
-    total += cost;
+    if (type === "hours") {
+      const hoursInput = item.querySelector("input.hours");
+      const hours = parseInt(hoursInput?.value, 10) || 0;
+      cost = rate * students * hours;
+    }
+
+    const cell = item.querySelector("span:last-child");
+    if (cell) cell.textContent = "$" + cost.toFixed(2);
+    return cost;
+  }
+
+  /* Instructions hours section */
+  document.querySelectorAll("#instructionHoursSection .item").forEach(item => {
+    subtotalTotal += calcItemCost(item);
   });
 
-  document.getElementById("total").textContent = total.toFixed(2);
-  document.getElementById("perStudent").textContent =
-    students > 0 ? (total / students).toFixed(2) : "0.00";
+  /* Optional costs section */
+  document.querySelectorAll(".section.optional .item").forEach(item => {
+    subtotalTotal += calcItemCost(item);
+  });
 
-  document.querySelector('[data-type="hours"] input[type="checkbox"]').checked = true;
+  const subtotalPerStudent = students > 0 ? (subtotalTotal / students) : 0;
+
+  /* Admin fee is 1.6x of subtotal total (all students) */
+  const adminFeeTotal = subtotalTotal * ADMIN_FEE_MULTIPLIER;
+
+  /* Total cost is subtotal total + admin fee total */
+  const grandTotal = subtotalTotal + adminFeeTotal;
+
+  document.getElementById("subtotalPerStudent").textContent = subtotalPerStudent.toFixed(2);
+  document.getElementById("adminFeeTotal").textContent = adminFeeTotal.toFixed(2);
+  document.getElementById("total").textContent = grandTotal.toFixed(2);
 }
 
 calculate();
