@@ -213,14 +213,90 @@
       }
     }
 
+    /* Print: keep the same structure as desktop, reduce excessive wrapping */
     @media print {
       * {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
 
+      html, body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      body {
+        padding: 0 !important;
+      }
+
       button {
-        display: none;
+        display: none !important;
+      }
+
+      .container {
+        max-width: 900px !important;
+        margin: 0 auto !important;
+        padding: 14px !important;
+      }
+
+      .header {
+        padding: 14px 18px !important;
+      }
+
+      .header-logo {
+        height: 48px !important;
+      }
+
+      .header-text h1 {
+        font-size: 1.35em !important;
+      }
+
+      .header-text p {
+        font-size: 0.9em !important;
+      }
+
+      h2 {
+        margin-top: 8px !important;
+        margin-bottom: 6px !important;
+      }
+
+      .divider {
+        margin: 16px 0 12px !important;
+      }
+
+      .section1, .section {
+        margin-bottom: 16px !important;
+      }
+
+      .item {
+        grid-template-columns: 30px 1fr auto auto !important;
+        align-items: center !important;
+        padding: 6px 0 !important;
+        gap: 10px !important;
+        font-size: 0.95em !important;
+      }
+
+      input.price {
+        width: 200px !important;
+        font-size: 0.95em !important;
+      }
+
+      input.hours {
+        width: 64px !important;
+        font-size: 0.95em !important;
+      }
+
+      .totals {
+        text-align: right !important;
+      }
+
+      .inputs {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+
+      .inputs-single {
+        grid-template-columns: 1fr !important;
       }
     }
   </style>
@@ -413,7 +489,14 @@ function handleAccommodationToggle(which) {
   if (which === "summer" && summerCheck.checked) fallSpringCheck.checked = false;
 }
 
-function updateAccommodationAvailability(isSummer, hasValidDates) {
+/*
+  Update accommodation visibility:
+  - No valid dates: show both (so user knows options exist)
+  - Valid dates:
+      * Summer: show Summer only
+      * Not summer: show Fall/Spring only
+*/
+function updateAccommodationVisibility(isSummer, hasValidDates) {
   const fallSpringItem = document.getElementById("accFallSpringItem");
   const summerItem = document.getElementById("accSummerItem");
 
@@ -423,6 +506,8 @@ function updateAccommodationAvailability(isSummer, hasValidDates) {
   if (!fallSpringItem || !summerItem || !fallSpringCheck || !summerCheck) return;
 
   if (!hasValidDates) {
+    fallSpringItem.style.display = "grid";
+    summerItem.style.display = "grid";
     fallSpringCheck.disabled = false;
     summerCheck.disabled = false;
     fallSpringItem.style.opacity = "1";
@@ -431,19 +516,19 @@ function updateAccommodationAvailability(isSummer, hasValidDates) {
   }
 
   if (isSummer) {
+    fallSpringCheck.checked = false;
+    fallSpringItem.style.display = "none";
+
+    summerItem.style.display = "grid";
     summerCheck.disabled = false;
     summerItem.style.opacity = "1";
-
-    fallSpringCheck.checked = false;
-    fallSpringCheck.disabled = true;
-    fallSpringItem.style.opacity = "0.55";
   } else {
+    summerCheck.checked = false;
+    summerItem.style.display = "none";
+
+    fallSpringItem.style.display = "grid";
     fallSpringCheck.disabled = false;
     fallSpringItem.style.opacity = "1";
-
-    summerCheck.checked = false;
-    summerCheck.disabled = true;
-    summerItem.style.opacity = "0.55";
   }
 }
 
@@ -516,7 +601,7 @@ function calculate() {
 
   window.__hasValidDates = hasValidDates;
 
-  updateAccommodationAvailability(summer, hasValidDates);
+  updateAccommodationVisibility(summer, hasValidDates);
 
   const studentText = students === 1 ? "1 student" : students + " student(s)";
 
@@ -543,7 +628,7 @@ function calculate() {
     if (!checkbox || !checkbox.checked) return 0;
 
     const priceEl = item.querySelector(".price");
-    const rate = parseFloat(priceEl?.dataset.price) || 0;
+    const rate = parseFloat(priceEl && priceEl.dataset ? priceEl.dataset.price : "0") || 0;
     const type = item.dataset.type;
 
     let cost = 0;
@@ -554,7 +639,7 @@ function calculate() {
 
     if (type === "group-hours") {
       const hoursInput = item.querySelector("input.hours");
-      const hours = parseInt(hoursInput?.value, 10) || 0;
+      const hours = parseInt(hoursInput ? hoursInput.value : "0", 10) || 0;
 
       cost = GROUP_RATE_PER_HOUR * groups * hours;
 
@@ -595,4 +680,3 @@ calculate();
 
 </body>
 </html>
-
