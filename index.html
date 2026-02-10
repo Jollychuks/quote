@@ -62,7 +62,6 @@
       margin-bottom: 15px;
     }
 
-    /* FIX: make the student row full width so the group text does not wrap */
     .inputs-single {
       grid-template-columns: 1fr;
     }
@@ -70,7 +69,18 @@
     .summary {
       font-size: 0.95em;
       color: #555;
-      margin-bottom: 20px;
+      margin-bottom: 8px;
+    }
+
+    .warning {
+      display: none;
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.95em;
+      margin-bottom: 18px;
     }
 
     .helper {
@@ -236,7 +246,6 @@
 <div class="container">
   <h2>Special Program Cost Estimate Generator</h2>
 
-  <!-- FIX: this row is now single-column full width -->
   <div class="inputs inputs-single">
     <div>
       <label>Number of Students (minimum 10)</label><br>
@@ -261,6 +270,10 @@
     Select start and end dates to see duration.
   </div>
 
+  <div class="warning" id="dateRequiredMsg">
+    Please choose a valid start and end date before selecting hours of instruction and optional cost items.
+  </div>
+
   <div class="divider"></div>
   <h2>Hours of Instructions (group pricing)</h2>
 
@@ -268,8 +281,8 @@
     <div class="item" data-type="group-hours">
       <input type="checkbox" onchange="calculate()">
       <span class="label hours-group" data-label-base="English Language Instruction (group)">
-        English Language Instruction (group)
-        <input class="hours" type="number" value="16" min="1" onchange="calculate()" oninput="calculate()">
+        English Language hours of Instruction
+        <input class="hours" type="number" value="0" min="1" onchange="calculate()" oninput="calculate()">
       </span>
       <input class="price" type="text" value="$280 per hour (per group of 10)" data-price="280" disabled>
       <span>$0.00</span>
@@ -278,8 +291,8 @@
     <div class="item" data-type="group-hours">
       <input type="checkbox" onchange="calculate()">
       <span class="label hours-group" data-label-base="Academic Coursework (group)">
-        Academic Coursework (group)
-        <input class="hours" type="number" value="16" min="1" onchange="calculate()" oninput="calculate()">
+        Academic Coursework hours of Instruction
+        <input class="hours" type="number" value="0" min="1" onchange="calculate()" oninput="calculate()">
       </span>
       <input class="price" type="text" value="$280 per hour (per group of 10)" data-price="280" disabled>
       <span>$0.00</span>
@@ -340,6 +353,38 @@ const ADMIN_FEE_MULTIPLIER = 0.6;
 
 const GROUP_SIZE = 10;
 const GROUP_RATE_PER_HOUR = 280;
+
+window.__hasValidDates = false;
+let __dateGateAttached = false;
+
+function showDateRequiredMessage(show) {
+  const msg = document.getElementById("dateRequiredMsg");
+  if (!msg) return;
+  msg.style.display = show ? "block" : "none";
+}
+
+function attachDateGateOnce() {
+  if (__dateGateAttached) return;
+  __dateGateAttached = true;
+
+  const targets = [
+    ...document.querySelectorAll("#instructionHoursSection input[type='checkbox']"),
+    ...document.querySelectorAll(".section.optional input[type='checkbox']")
+  ];
+
+  targets.forEach(cb => {
+    cb.addEventListener("change", (e) => {
+      if (window.__hasValidDates) {
+        showDateRequiredMessage(false);
+        return;
+      }
+
+      e.target.checked = false;
+      showDateRequiredMessage(true);
+      calculate();
+    });
+  });
+}
 
 function isSummerProgram(start, end) {
   const y1 = start.getFullYear();
@@ -420,6 +465,7 @@ function updateGroupHelper(students, groups) {
 }
 
 function calculate() {
+  attachDateGateOnce();
   initLabelBasesOnce();
 
   const studentsInput = document.getElementById("students");
@@ -458,6 +504,7 @@ function calculate() {
         days + " day(s), " + nights + " night(s), " + weeks + " week(s)";
 
       summer = isSummerProgram(start, end);
+      showDateRequiredMessage(false);
     } else {
       document.getElementById("dateSummary").textContent =
         "End date cannot be earlier than the start date.";
@@ -466,6 +513,8 @@ function calculate() {
     document.getElementById("dateSummary").textContent =
       "Select start and end dates to see duration.";
   }
+
+  window.__hasValidDates = hasValidDates;
 
   updateAccommodationAvailability(summer, hasValidDates);
 
