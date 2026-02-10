@@ -4,7 +4,6 @@
   <title>Special Program Cost Estimate Generator</title>
 
   <style>
-    /* ---------- HEADER ---------- */
     .header {
       background: linear-gradient(135deg, #003057, #00539B);
       color: #ffffff;
@@ -69,6 +68,17 @@
       margin-bottom: 20px;
     }
 
+    .helper {
+      margin-top: 6px;
+      font-size: 0.9em;
+      color: #666;
+      line-height: 1.3;
+    }
+
+    .helper b {
+      color: #003057;
+    }
+
     .section1,
     .section {
       border: 1px solid #ddd;
@@ -112,7 +122,7 @@
     }
 
     input.price {
-      width: 170px;
+      width: 210px;
       background: #f0f0f0;
       color: #444;
       border: 1px solid #ccc;
@@ -214,8 +224,9 @@
 
   <div class="inputs">
     <div>
-      <label>Number of Students</label><br>
-      <input type="number" id="students" value="1" min="1" onchange="calculate()">
+      <label>Number of Students (minimum 10)</label><br>
+      <input type="number" id="students" value="10" min="10" onchange="calculate()" oninput="calculate()">
+      <div class="helper" id="groupHelper"></div>
     </div>
   </div>
 
@@ -243,9 +254,9 @@
       <input type="checkbox" onchange="calculate()">
       <span class="label hours-group" data-label-base="English Language Instruction (group)">
         English Language Instruction (group)
-        <input class="hours" type="number" value="16" min="1" onchange="calculate()">
+        <input class="hours" type="number" value="16" min="1" onchange="calculate()" oninput="calculate()">
       </span>
-      <input class="price" type="text" value="$280 per hour (per group of 10)" data-price="280" disabled>
+      <input class="price" type="text" value="$281.25 per hour (per group of 10)" data-price="281.25" disabled>
       <span>$0.00</span>
     </div>
 
@@ -253,9 +264,9 @@
       <input type="checkbox" onchange="calculate()">
       <span class="label hours-group" data-label-base="Academic Coursework (group)">
         Academic Coursework (group)
-        <input class="hours" type="number" value="16" min="1" onchange="calculate()">
+        <input class="hours" type="number" value="16" min="1" onchange="calculate()" oninput="calculate()">
       </span>
-      <input class="price" type="text" value="$280 per hour (per group of 10)" data-price="280" disabled>
+      <input class="price" type="text" value="$281.25 per hour (per group of 10)" data-price="281.25" disabled>
       <span>$0.00</span>
     </div>
   </div>
@@ -271,7 +282,6 @@
       <span>$0.00</span>
     </div>
 
-    <!-- Accommodation option 1: Fall/Spring off-campus -->
     <div class="item physical-only" data-type="person-night" id="accFallSpringItem">
       <input type="checkbox" id="accFallSpringCheck" onchange="handleAccommodationToggle('fallSpring'); calculate();">
       <span class="label" data-label-base="Fall/Spring off-Campus Accommodation">Fall/Spring off-Campus Accommodation</span>
@@ -279,7 +289,6 @@
       <span>$0.00</span>
     </div>
 
-    <!-- Accommodation option 2: Summer on-campus -->
     <div class="item physical-only" data-type="person-night" id="accSummerItem">
       <input type="checkbox" id="accSummerCheck" onchange="handleAccommodationToggle('summer'); calculate();">
       <span class="label" data-label-base="Summer On-Campus Accommodation">Summer On-Campus Accommodation</span>
@@ -312,30 +321,19 @@
 </div>
 
 <script>
-/* Admin fee is subtotal * 0.6 */
 const ADMIN_FEE_MULTIPLIER = 0.6;
 
-/* Group pricing assumptions */
 const GROUP_SIZE = 10;
-const GROUP_RATE_PER_HOUR = 280;
+const PACKAGE_HOURS = 16;
+const PACKAGE_PRICE = 4500;
+const GROUP_RATE_PER_HOUR = PACKAGE_PRICE / PACKAGE_HOURS; // 281.25
 
-/*
-If you want to always assume exactly 10 participants (one group), set this to true.
-- true: groupCount = 1 always
-- false: groupCount = ceil(students / GROUP_SIZE)
-*/
-const ALWAYS_ASSUME_ONE_GROUP = false;
-
-/*
-Define summer window rule.
-Current rule: Summer if the entire program range falls between June 1 and August 31 (inclusive).
-*/
 function isSummerProgram(start, end) {
   const y1 = start.getFullYear();
   const y2 = end.getFullYear();
   if (y1 !== y2) return false;
 
-  const summerStart = new Date(y1, 5, 1);  // June 1
+  const summerStart = new Date(y1, 5, 1);  // Jun 1
   const summerEnd = new Date(y1, 7, 31);   // Aug 31
   return start >= summerStart && end <= summerEnd;
 }
@@ -348,7 +346,6 @@ function initLabelBasesOnce() {
   });
 }
 
-/* Enforce mutual exclusivity for accommodation selections */
 function handleAccommodationToggle(which) {
   const fallSpringCheck = document.getElementById("accFallSpringCheck");
   const summerCheck = document.getElementById("accSummerCheck");
@@ -362,7 +359,6 @@ function handleAccommodationToggle(which) {
   }
 }
 
-/* Enable/disable based on season, and ensure only valid one can be selected */
 function updateAccommodationAvailability(isSummer, hasValidDates) {
   const fallSpringItem = document.getElementById("accFallSpringItem");
   const summerItem = document.getElementById("accSummerItem");
@@ -373,7 +369,6 @@ function updateAccommodationAvailability(isSummer, hasValidDates) {
   if (!fallSpringItem || !summerItem || !fallSpringCheck || !summerCheck) return;
 
   if (!hasValidDates) {
-    // No valid dates. Allow both options, still mutually exclusive via toggle handler.
     fallSpringCheck.disabled = false;
     summerCheck.disabled = false;
     fallSpringItem.style.opacity = "1";
@@ -382,7 +377,6 @@ function updateAccommodationAvailability(isSummer, hasValidDates) {
   }
 
   if (isSummer) {
-    // Summer: allow summer, disable fall/spring and uncheck it
     summerCheck.disabled = false;
     summerItem.style.opacity = "1";
 
@@ -390,7 +384,6 @@ function updateAccommodationAvailability(isSummer, hasValidDates) {
     fallSpringCheck.disabled = true;
     fallSpringItem.style.opacity = "0.55";
   } else {
-    // Fall/Spring: allow fall/spring, disable summer and uncheck it
     fallSpringCheck.disabled = false;
     fallSpringItem.style.opacity = "1";
 
@@ -400,10 +393,34 @@ function updateAccommodationAvailability(isSummer, hasValidDates) {
   }
 }
 
+function computeGroups(students) {
+  return Math.max(1, Math.ceil(students / GROUP_SIZE));
+}
+
+function updateGroupHelper(students, groups) {
+  const el = document.getElementById("groupHelper");
+  if (!el) return;
+
+  const capacity = groups * GROUP_SIZE;
+  el.innerHTML =
+    "<b>Groups:</b> " + groups +
+    " (computed as ceil(" + students + " / " + GROUP_SIZE + "), " +
+    GROUP_SIZE + " students per group, capacity " + capacity + ")";
+}
+
 function calculate() {
   initLabelBasesOnce();
 
-  const students = parseInt(document.getElementById("students").value, 10) || 0;
+  const studentsInput = document.getElementById("students");
+  let students = parseInt(studentsInput.value, 10) || GROUP_SIZE;
+
+  if (students < GROUP_SIZE) {
+    students = GROUP_SIZE;
+    studentsInput.value = String(GROUP_SIZE);
+  }
+
+  const groups = computeGroups(students);
+  updateGroupHelper(students, groups);
 
   const startVal = document.getElementById("startDate").value;
   const endVal = document.getElementById("endDate").value;
@@ -424,6 +441,7 @@ function calculate() {
 
     if (end >= start) {
       hasValidDates = true;
+
       days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
       nights = Math.max(days - 1, 0);
       weeks = Math.max(1, Math.ceil(days / 7));
@@ -445,7 +463,6 @@ function calculate() {
 
   const studentText = students === 1 ? "1 student" : students + " student(s)";
 
-  /* Rebuild optional labels safely (prevents repeats) */
   document.querySelectorAll(".section.optional .item .label").forEach(labelEl => {
     const base = (labelEl.dataset.labelBase || "").trim();
     const item = labelEl.closest(".item");
@@ -457,7 +474,6 @@ function calculate() {
     }
   });
 
-  /* Reset all cost cells first */
   document.querySelectorAll(".item").forEach(item => {
     const costCell = item.querySelector("span:last-child");
     if (costCell) costCell.textContent = "$0.00";
@@ -465,13 +481,12 @@ function calculate() {
 
   let subtotalTotal = 0;
 
-  const groupCount = ALWAYS_ASSUME_ONE_GROUP ? 1 : Math.max(1, Math.ceil(students / GROUP_SIZE));
-
   function calcItemCost(item) {
     const checkbox = item.querySelector("input[type='checkbox']");
     if (!checkbox || !checkbox.checked) return 0;
 
-    const rate = parseFloat(item.querySelector(".price")?.dataset.price) || 0;
+    const priceEl = item.querySelector(".price");
+    const rate = parseFloat(priceEl?.dataset.price) || 0;
     const type = item.dataset.type;
 
     let cost = 0;
@@ -484,12 +499,13 @@ function calculate() {
       const hoursInput = item.querySelector("input.hours");
       const hours = parseInt(hoursInput?.value, 10) || 0;
 
-      cost = GROUP_RATE_PER_HOUR * groupCount * hours;
+      cost = GROUP_RATE_PER_HOUR * groups * hours;
 
-      const priceEl = item.querySelector(".price");
       if (priceEl) {
         priceEl.dataset.price = String(GROUP_RATE_PER_HOUR);
-        priceEl.value = "$" + GROUP_RATE_PER_HOUR + " per hour (per group of " + GROUP_SIZE + ")";
+        priceEl.value =
+          "$" + GROUP_RATE_PER_HOUR.toFixed(2) +
+          " per hour (per group of " + GROUP_SIZE + ")";
       }
     }
 
@@ -499,12 +515,10 @@ function calculate() {
     return cost;
   }
 
-  /* Instructions hours section */
   document.querySelectorAll("#instructionHoursSection .item").forEach(item => {
     subtotalTotal += calcItemCost(item);
   });
 
-  /* Optional costs section */
   document.querySelectorAll(".section.optional .item").forEach(item => {
     subtotalTotal += calcItemCost(item);
   });
