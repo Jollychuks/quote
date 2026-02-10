@@ -112,14 +112,14 @@
     }
 
     input.price {
-      width: 130px;
+      width: 150px;
       background: #f0f0f0;
       color: #444;
       border: 1px solid #ccc;
     }
 
     input.hours {
-      width: 60px;
+      width: 70px;
     }
 
     .hours-group {
@@ -236,26 +236,26 @@
   </div>
 
   <div class="divider"></div>
-  <h2>Hours of Instructions for each student</h2>
+  <h2>Hours of Instructions (group pricing)</h2>
 
   <div class="section1 mandatory" id="instructionHoursSection">
-    <div class="item" data-type="hours">
+    <div class="item" data-type="group-hours">
       <input type="checkbox" onchange="calculate()">
-      <span class="label hours-group" data-label-base="Hours of English Language Instruction for each student">
-        Hours of English Language Instruction
-        <input class="hours" type="number" value="1" min="1" onchange="calculate()">
+      <span class="label hours-group" data-label-base="English Language Instruction (group)">
+        English Language Instruction (group)
+        <input class="hours" type="number" value="16" min="1" onchange="calculate()">
       </span>
-      <input class="price" type="text" value="$15 per hour" data-price="15" disabled>
+      <input class="price" type="text" value="$280 per hour (per group of 10)" data-price="280" disabled>
       <span>$0.00</span>
     </div>
 
-    <div class="item" data-type="hours">
+    <div class="item" data-type="group-hours">
       <input type="checkbox" onchange="calculate()">
-      <span class="label hours-group" data-label-base="Hours of Academic Coursework (e.g. Engineering, Business, etc.)">
-        Hours of Academic Coursework (e.g. Engineering, Business, etc.)
-        <input class="hours" type="number" value="1" min="1" onchange="calculate()">
+      <span class="label hours-group" data-label-base="Academic Coursework (group)">
+        Academic Coursework (group)
+        <input class="hours" type="number" value="16" min="1" onchange="calculate()">
       </span>
-      <input class="price" type="text" value="$15 per hour" data-price="15" disabled>
+      <input class="price" type="text" value="$280 per hour (per group of 10)" data-price="280" disabled>
       <span>$0.00</span>
     </div>
   </div>
@@ -271,10 +271,11 @@
       <span>$0.00</span>
     </div>
 
-    <div class="item physical-only" data-type="person-night">
+    <!-- Accommodation price is dynamic based on dates -->
+    <div class="item physical-only" data-type="person-night" id="accommodationItem">
       <input type="checkbox" onchange="calculate()">
       <span class="label" data-label-base="Accommodation">Accommodation</span>
-      <input class="price" type="text" value="$60 per night" data-price="60" disabled>
+      <input class="price" type="text" value="$70 per night" data-price="70" disabled>
       <span>$0.00</span>
     </div>
 
@@ -293,7 +294,6 @@
     </div>
   </div>
 
-  <!-- Updated: only show subtotal per student, admin fee, and total cost -->
   <div class="totals">
     <div>Subtotal Per Student: $<span id="subtotalPerStudent">0.00</span></div>
     <div>Program Administration Fee: $<span id="adminFeeTotal">0.00</span></div>
@@ -304,7 +304,40 @@
 </div>
 
 <script>
+/* Admin fee is subtotal * 0.6 */
 const ADMIN_FEE_MULTIPLIER = 0.6;
+
+/* Group pricing assumptions */
+const GROUP_SIZE = 10;
+const GROUP_RATE_PER_HOUR = 280; // client estimate (16 hours -> about $4,480). If you prefer $4,500 exactly, see note below.
+
+/*
+If you want to always assume exactly 10 participants (one group), set this to true.
+- true: groupCount = 1 always
+- false: groupCount = ceil(students / GROUP_SIZE)
+*/
+const ALWAYS_ASSUME_ONE_GROUP = false;
+
+/* Seasonal housing configuration */
+const SUMMER_NIGHTLY_RATE = 40; // on-campus
+const NON_SUMMER_NIGHTLY_RATE = 70; // off-campus
+
+/*
+Define summer window rule.
+Current rule: Summer if the entire program range falls between June 1 and August 31 (inclusive).
+Adjust months/days here if your client uses a different definition.
+*/
+function isSummerProgram(start, end) {
+  const y1 = start.getFullYear();
+  const y2 = end.getFullYear();
+
+  // If it spans different years, treat as non-summer by default.
+  if (y1 !== y2) return false;
+
+  const summerStart = new Date(y1, 5, 1);  // June 1 (month is 0-based)
+  const summerEnd = new Date(y1, 7, 31);   // Aug 31
+  return start >= summerStart && end <= summerEnd;
+}
 
 function initLabelBasesOnce() {
   document.querySelectorAll(".label").forEach(labelEl => {
@@ -312,6 +345,17 @@ function initLabelBasesOnce() {
       labelEl.dataset.labelBase = labelEl.textContent.trim();
     }
   });
+}
+
+function setAccommodationRate(nightlyRate) {
+  const accItem = document.getElementById("accommodationItem");
+  if (!accItem) return;
+
+  const priceInput = accItem.querySelector(".price");
+  if (!priceInput) return;
+
+  priceInput.dataset.price = String(nightlyRate);
+  priceInput.value = "$" + nightlyRate + " per night";
 }
 
 function calculate() {
@@ -326,9 +370,12 @@ function calculate() {
   let nights = 0;
   let weeks = 0;
 
+  let start = null;
+  let end = null;
+
   if (startVal && endVal) {
-    const start = new Date(startVal);
-    const end = new Date(endVal);
+    start = new Date(startVal);
+    end = new Date(endVal);
 
     if (end >= start) {
       days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
@@ -345,9 +392,18 @@ function calculate() {
       "Select start and end dates to see duration.";
   }
 
+  /* Apply seasonal housing rate once dates are valid */
+  if (start && end && end >= start) {
+    const summer = isSummerProgram(start, end);
+    setAccommodationRate(summer ? SUMMER_NIGHTLY_RATE : NON_SUMMER_NIGHTLY_RATE);
+  } else {
+    // Default display if no dates yet
+    setAccommodationRate(NON_SUMMER_NIGHTLY_RATE);
+  }
+
   const studentText = students === 1 ? "1 student" : students + " student(s)";
 
-  /* Rebuild labels safely (prevents repeats) */
+  /* Rebuild optional labels safely (prevents repeats) */
   document.querySelectorAll(".section.optional .item .label").forEach(labelEl => {
     const base = (labelEl.dataset.labelBase || "").trim();
     const item = labelEl.closest(".item");
@@ -368,26 +424,40 @@ function calculate() {
 
   let subtotalTotal = 0;
 
+  const groupCount = ALWAYS_ASSUME_ONE_GROUP ? 1 : Math.max(1, Math.ceil(students / GROUP_SIZE));
+
   function calcItemCost(item) {
     const checkbox = item.querySelector("input[type='checkbox']");
     if (!checkbox || !checkbox.checked) return 0;
 
-    const rate = parseFloat(item.querySelector(".price")?.dataset.price) || 0;
+    const priceEl = item.querySelector(".price");
+    const rate = parseFloat(priceEl?.dataset.price) || 0;
     const type = item.dataset.type;
+
     let cost = 0;
 
     if (type === "person-week" && days > 0) cost = rate * students * weeks;
     if (type === "person-night" && days > 0) cost = rate * students * nights;
     if (type === "person-day" && days > 0) cost = rate * students * days;
 
-    if (type === "hours") {
+    if (type === "group-hours") {
       const hoursInput = item.querySelector("input.hours");
       const hours = parseInt(hoursInput?.value, 10) || 0;
-      cost = rate * students * hours;
+
+      // Group-based pricing, not multiplied by students.
+      // Uses the number of groups (based on GROUP_SIZE) unless ALWAYS_ASSUME_ONE_GROUP is true.
+      cost = GROUP_RATE_PER_HOUR * groupCount * hours;
+
+      // Keep the display in sync in case you later change GROUP_RATE_PER_HOUR in code.
+      if (priceEl) {
+        priceEl.dataset.price = String(GROUP_RATE_PER_HOUR);
+        priceEl.value = "$" + GROUP_RATE_PER_HOUR + " per hour (per group of " + GROUP_SIZE + ")";
+      }
     }
 
     const cell = item.querySelector("span:last-child");
     if (cell) cell.textContent = "$" + cost.toFixed(2);
+
     return cost;
   }
 
@@ -403,10 +473,7 @@ function calculate() {
 
   const subtotalPerStudent = students > 0 ? (subtotalTotal / students) : 0;
 
-  /* Admin fee is 1.6x of subtotal total (all students) */
   const adminFeeTotal = subtotalTotal * ADMIN_FEE_MULTIPLIER;
-
-  /* Total cost is subtotal total + admin fee total */
   const grandTotal = subtotalTotal + adminFeeTotal;
 
   document.getElementById("subtotalPerStudent").textContent = subtotalPerStudent.toFixed(2);
@@ -415,10 +482,13 @@ function calculate() {
 }
 
 calculate();
+
+/*
+Optional tweak if your client insists that 16 hours must equal exactly $4,500:
+- Replace GROUP_RATE_PER_HOUR with (4500 / 16) = 281.25
+- Or keep 280 and add a "Flat 16-hour package" checkbox item instead.
+*/
 </script>
 
 </body>
 </html>
-
-
-
