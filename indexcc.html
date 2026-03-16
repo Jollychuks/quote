@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Special Program Cost Estimate Generator</title>
+
+  <style>
+    .header {
+      background: linear-gradient(135deg, #003057, #00539B);
+      color: #ffffff;
+      padding: 20px 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .header-logo {
+      height: 55px;
+      width: auto;
+    }
+
+    .header-text h1 {
+      margin: 0;
+      font-size: 1.6em;
+    }
+
+    .header-text p {
+      margin: 4px 0 0;
+      font-size: 0.95em;
+      opacity: 0.9;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 0 0 8px 8px;
+    }
+
+    h2 {
+      margin-top: 10px;
+    }
+
+    .inputs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 15px;
+    }
+
+    .inputs-single {
+      grid-template-columns: 1fr;
+    }
+
+    .summary {
+      font-size: 0.95em;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .warning {
+      display: none;
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.95em;
+      margin-bottom: 18px;
+    }
+
+    .helper {
+      margin-top: 6px;
+      font-size: 0.92em;
+      color: #555;
+      line-height: 1.35;
+    }
+
+    .helper .line {
+      display: block;
+      margin-top: 3px;
+    }
+
+    .helper b {
+      color: #003057;
+    }
+
+    .nowrap {
+      white-space: nowrap;
+    }
+
+    .section1,
+    .section {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 25px;
+    }
+
+    .section1 {
+      padding: 5px 15px;
+    }
+
+    .section {
+      padding: 15px;
+    }
+
+    .mandatory {
+      background: #f9fbff;
+    }
+
+    .optional {
+      background: #fffaf4;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: 30px 1fr auto auto;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #ddd;
+      gap: 10px;
+    }
+
+    .item:last-child {
+      border-bottom: none;
+    }
+
+    .item span:last-child {
+      min-width: 120px;
+      text-align: right;
+      font-weight: bold;
+    }
+
+    input.price {
+      width: 210px;
+      background: #f0f0f0;
+      color: #444;
+      border: 1px solid #ccc;
+    }
+
+    input.hours {
+      width: 70px;
+    }
+
+    .hours-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .divider {
+      border-top: 2px solid #ddd;
+      margin: 30px 0 20px;
+    }
+
+    .totals {
+      border-top: 2px solid #ddd;
+      padding-top: 15px;
+      margin-top: 20px;
+      text-align: right;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 18px;
+      font-size: 1em;
+      cursor: pointer;
+      width: 100%;
+      background: #003057;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background: #002746;
+    }
+
+    @media (max-width: 600px) {
+      .inputs {
+        grid-template-columns: 1fr;
+      }
+
+      .item {
+        grid-template-columns: 1fr;
+        align-items: flex-start;
+      }
+
+      .item span,
+      .item input.price,
+      .item span:last-child {
+        width: 100%;
+        text-align: left;
+      }
+
+      .totals {
+        text-align: left;
+      }
+    }
+
+    /* Print: keep the same structure as desktop, reduce excessive wrapping */
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      html, body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      body {
+        padding: 0 !important;
+      }
+
+      button {
+        display: none !important;
+      }
+
+      .container {
+        max-width: 900px !important;
+        margin: 0 auto !important;
+        padding: 14px !important;
+      }
+
+      .header {
+        padding: 14px 18px !important;
+      }
+
+      .header-logo {
+        height: 48px !important;
+      }
+
+      .header-text h1 {
+        font-size: 1.35em !important;
+      }
+
+      .header-text p {
+        font-size: 0.9em !important;
+      }
+
+      h2 {
+        margin-top: 8px !important;
+        margin-bottom: 6px !important;
+      }
+
+      .divider {
+        margin: 16px 0 12px !important;
+      }
+
+      .section1, .section {
+        margin-bottom: 16px !important;
+      }
+
+      .item {
+        grid-template-columns: 30px 1fr auto auto !important;
+        align-items: center !important;
+        padding: 6px 0 !important;
+        gap: 10px !important;
+        font-size: 0.95em !important;
+      }
+
+      input.price {
+        width: 200px !important;
+        font-size: 0.95em !important;
+      }
+
+      input.hours {
+        width: 64px !important;
+        font-size: 0.95em !important;
+      }
+
+      .totals {
+        text-align: right !important;
+      }
+
+      .inputs {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+
+      .inputs-single {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-text">
+      <h1>English Language Center</h1>
+      <p>Old Dominion University</p>
+    </div>
+  </div>
+
+  <img
+    src="logo.png"
+    alt="ODU ELC Logo"
+    class="header-logo"
+  >
+</div>
+
+<div class="container">
+  <h2>Special Program Cost Estimate Generator</h2>
+
+  <div class="inputs inputs-single">
+    <div>
+      <label>Number of Students (minimum 10)</label><br>
+      <input type="number" id="students" value="10" min="10" onchange="calculate()" oninput="calculate()">
+      <div class="helper" id="groupHelper"></div>
+    </div>
+  </div>
+
+  <div class="inputs">
+    <div>
+      <label>Start Date</label><br>
+      <input type="date" id="startDate" onchange="calculate()">
+    </div>
+
+    <div>
+      <label>End Date</label><br>
+      <input type="date" id="endDate" onchange="calculate()">
+    </div>
+  </div>
+
+  <div class="summary" id="dateSummary">
+    Select start and end dates to see duration.
+  </div>
+
+  <div class="warning" id="dateRequiredMsg">
+    Please select a valid start and end date before selecting hours of instruction and optional cost items.
+  </div>
+
+  <div class="divider"></div>
+  <h2>Hours of Instructions (group pricing)</h2>
+
+  <div class="section1 mandatory" id="instructionHoursSection">
+    <div class="item" data-type="group-hours">
+      <input type="checkbox" onchange="calculate()">
+      <span class="label hours-group" data-label-base="English Language Instruction (group)">
+        English Language hours of Instruction
+        <input class="hours" type="number" value="0" min="1" onchange="calculate()" oninput="calculate()">
+      </span>
+      <input class="price" type="text" value="$280 per hour (per group of 10)" data-price="280" disabled>
+      <span>$0.00</span>
+    </div>
+
+    <div class="item" data-type="group-hours">
+      <input type="checkbox" onchange="calculate()">
+      <span class="label hours-group" data-label-base="Academic Coursework (group)">
+        Academic Coursework hours of Instruction
+        <input class="hours" type="number" value="0" min="1" onchange="calculate()" oninput="calculate()">
+      </span>
+      <input class="price" type="text" value="$280 per hour (per group of 10)" data-price="280" disabled>
+      <span>$0.00</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <h2>Optional Costs</h2>
+
+  <div class="section optional">
+    <div class="item physical-only" data-type="person-week">
+      <input type="checkbox" onchange="calculate()">
+      <span class="label" data-label-base="Transportation Fee">Transportation fee</span>
+      <input class="price" type="text" value="$100 per week" data-price="100" disabled>
+      <span>$0.00</span>
+    </div>
+
+    <div class="item physical-only" data-type="person-night" id="accFallSpringItem">
+      <input type="checkbox" id="accFallSpringCheck" onchange="handleAccommodationToggle('fallSpring'); calculate();">
+      <span class="label" data-label-base="Fall/Spring off-Campus Accommodation">Fall/Spring off-Campus Accommodation</span>
+      <input class="price" type="text" value="$70 per night" data-price="70" disabled>
+      <span>$0.00</span>
+    </div>
+
+    <div class="item physical-only" data-type="person-night" id="accSummerItem">
+      <input type="checkbox" id="accSummerCheck" onchange="handleAccommodationToggle('summer'); calculate();">
+      <span class="label" data-label-base="Summer On-Campus Accommodation">Summer On-Campus Accommodation</span>
+      <input class="price" type="text" value="$40 per night" data-price="40" disabled>
+      <span>$0.00</span>
+    </div>
+
+    <div class="item physical-only" data-type="person-day">
+      <input type="checkbox" onchange="calculate()">
+      <span class="label" data-label-base="Meals">Meals</span>
+      <input class="price" type="text" value="$50 per day" data-price="50" disabled>
+      <span>$0.00</span>
+    </div>
+
+    <div class="item physical-only" data-type="person-week">
+      <input type="checkbox" onchange="calculate()">
+      <span class="label" data-label-base="Activity Fee">Activity Fee</span>
+      <input class="price" type="text" value="$50 per week" data-price="50" disabled>
+      <span>$0.00</span>
+    </div>
+  </div>
+
+  <div class="totals">
+    <div>Subtotal Per Student: $<span id="subtotalPerStudent">0.00</span></div>
+    <div>Program Administration Fee: $<span id="adminFeeTotal">0.00</span></div>
+    <div><b>Total Cost: $<span id="total">0.00</span></b></div>
+  </div>
+
+  <button onclick="window.print()">Export Quote as PDF</button>
+</div>
+
+<script>
+const ADMIN_FEE_MULTIPLIER = 0.6;
+
+const GROUP_SIZE = 10;
+const GROUP_RATE_PER_HOUR = 280;
+
+window.__hasValidDates = false;
+let __dateGateAttached = false;
+
+function showDateRequiredMessage(show) {
+  const msg = document.getElementById("dateRequiredMsg");
+  if (!msg) return;
+  msg.style.display = show ? "block" : "none";
+}
+
+function attachDateGateOnce() {
+  if (__dateGateAttached) return;
+  __dateGateAttached = true;
+
+  const targets = [
+    ...document.querySelectorAll("#instructionHoursSection input[type='checkbox']"),
+    ...document.querySelectorAll(".section.optional input[type='checkbox']")
+  ];
+
+  targets.forEach(cb => {
+    cb.addEventListener("change", (e) => {
+      if (window.__hasValidDates) {
+        showDateRequiredMessage(false);
+        return;
+      }
+
+      e.target.checked = false;
+      showDateRequiredMessage(true);
+      calculate();
+    });
+  });
+}
+
+function isSummerProgram(start, end) {
+  const y1 = start.getFullYear();
+  const y2 = end.getFullYear();
+  if (y1 !== y2) return false;
+
+  const summerStart = new Date(y1, 5, 1);  // Jun 1
+  const summerEnd = new Date(y1, 7, 31);   // Aug 31
+  return start >= summerStart && end <= summerEnd;
+}
+
+function initLabelBasesOnce() {
+  document.querySelectorAll(".label").forEach(labelEl => {
+    if (!labelEl.dataset.labelBase || labelEl.dataset.labelBase.trim() === "") {
+      labelEl.dataset.labelBase = labelEl.textContent.trim();
+    }
+  });
+}
+
+function handleAccommodationToggle(which) {
+  const fallSpringCheck = document.getElementById("accFallSpringCheck");
+  const summerCheck = document.getElementById("accSummerCheck");
+  if (!fallSpringCheck || !summerCheck) return;
+
+  if (which === "fallSpring" && fallSpringCheck.checked) summerCheck.checked = false;
+  if (which === "summer" && summerCheck.checked) fallSpringCheck.checked = false;
+}
+
+/*
+  Update accommodation visibility:
+  - No valid dates: show both (so user knows options exist)
+  - Valid dates:
+      * Summer: show Summer only
+      * Not summer: show Fall/Spring only
+*/
+function updateAccommodationVisibility(isSummer, hasValidDates) {
+  const fallSpringItem = document.getElementById("accFallSpringItem");
+  const summerItem = document.getElementById("accSummerItem");
+
+  const fallSpringCheck = document.getElementById("accFallSpringCheck");
+  const summerCheck = document.getElementById("accSummerCheck");
+
+  if (!fallSpringItem || !summerItem || !fallSpringCheck || !summerCheck) return;
+
+  if (!hasValidDates) {
+    fallSpringItem.style.display = "grid";
+    summerItem.style.display = "grid";
+    fallSpringCheck.disabled = false;
+    summerCheck.disabled = false;
+    fallSpringItem.style.opacity = "1";
+    summerItem.style.opacity = "1";
+    return;
+  }
+
+  if (isSummer) {
+    fallSpringCheck.checked = false;
+    fallSpringItem.style.display = "none";
+
+    summerItem.style.display = "grid";
+    summerCheck.disabled = false;
+    summerItem.style.opacity = "1";
+  } else {
+    summerCheck.checked = false;
+    summerItem.style.display = "none";
+
+    fallSpringItem.style.display = "grid";
+    fallSpringCheck.disabled = false;
+    fallSpringItem.style.opacity = "1";
+  }
+}
+
+function computeGroups(students) {
+  return Math.max(1, Math.ceil(students / GROUP_SIZE));
+}
+
+function updateGroupHelper(students, groups) {
+  const el = document.getElementById("groupHelper");
+  if (!el) return;
+
+  const capacity = groups * GROUP_SIZE;
+
+  el.innerHTML =
+    '<div class="line"><b>Number of groups:</b> ' +
+      groups + ' <span class="nowrap">(' + GROUP_SIZE + ' students per group)</span></div>' +
+    '<div class="line"><b>Capacity:</b> ' +
+      capacity + ' students</div>';
+}
+
+function calculate() {
+  attachDateGateOnce();
+  initLabelBasesOnce();
+
+  const studentsInput = document.getElementById("students");
+  let students = parseInt(studentsInput.value, 10) || GROUP_SIZE;
+
+  if (students < GROUP_SIZE) {
+    students = GROUP_SIZE;
+    studentsInput.value = String(GROUP_SIZE);
+  }
+
+  const groups = computeGroups(students);
+  updateGroupHelper(students, groups);
+
+  const startVal = document.getElementById("startDate").value;
+  const endVal = document.getElementById("endDate").value;
+
+  let days = 0;
+  let nights = 0;
+  let weeks = 0;
+
+  let hasValidDates = false;
+  let summer = false;
+
+  if (startVal && endVal) {
+    const start = new Date(startVal);
+    const end = new Date(endVal);
+
+    if (end >= start) {
+      hasValidDates = true;
+
+      days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      nights = Math.max(days - 1, 0);
+      weeks = Math.max(1, Math.ceil(days / 7));
+
+      document.getElementById("dateSummary").textContent =
+        days + " day(s), " + nights + " night(s), " + weeks + " week(s)";
+
+      summer = isSummerProgram(start, end);
+      showDateRequiredMessage(false);
+    } else {
+      document.getElementById("dateSummary").textContent =
+        "End date cannot be earlier than the start date.";
+    }
+  } else {
+    document.getElementById("dateSummary").textContent =
+      "Select start and end dates to see duration.";
+  }
+
+  window.__hasValidDates = hasValidDates;
+
+  updateAccommodationVisibility(summer, hasValidDates);
+
+  const studentText = students === 1 ? "1 student" : students + " student(s)";
+
+  document.querySelectorAll(".section.optional .item .label").forEach(labelEl => {
+    const base = (labelEl.dataset.labelBase || "").trim();
+    const item = labelEl.closest(".item");
+    if (!item) return;
+
+    const type = item.dataset.type;
+    if (type === "person" || type === "person-day" || type === "person-night" || type === "person-week") {
+      labelEl.textContent = base + " for " + studentText;
+    }
+  });
+
+  document.querySelectorAll(".item").forEach(item => {
+    const costCell = item.querySelector("span:last-child");
+    if (costCell) costCell.textContent = "$0.00";
+  });
+
+  let subtotalTotal = 0;
+
+  function calcItemCost(item) {
+    const checkbox = item.querySelector("input[type='checkbox']");
+    if (!checkbox || !checkbox.checked) return 0;
+
+    const priceEl = item.querySelector(".price");
+    const rate = parseFloat(priceEl && priceEl.dataset ? priceEl.dataset.price : "0") || 0;
+    const type = item.dataset.type;
+
+    let cost = 0;
+
+    if (type === "person-week" && days > 0) cost = rate * students * weeks;
+    if (type === "person-night" && days > 0) cost = rate * students * nights;
+    if (type === "person-day" && days > 0) cost = rate * students * days;
+
+    if (type === "group-hours") {
+      const hoursInput = item.querySelector("input.hours");
+      const hours = parseInt(hoursInput ? hoursInput.value : "0", 10) || 0;
+
+      cost = GROUP_RATE_PER_HOUR * groups * hours;
+
+      if (priceEl) {
+        priceEl.dataset.price = String(GROUP_RATE_PER_HOUR);
+        priceEl.value =
+          "$" + GROUP_RATE_PER_HOUR.toFixed(2) +
+          " per hour (per group of " + GROUP_SIZE + ")";
+      }
+    }
+
+    const cell = item.querySelector("span:last-child");
+    if (cell) cell.textContent = "$" + cost.toFixed(2);
+
+    return cost;
+  }
+
+  document.querySelectorAll("#instructionHoursSection .item").forEach(item => {
+    subtotalTotal += calcItemCost(item);
+  });
+
+  document.querySelectorAll(".section.optional .item").forEach(item => {
+    subtotalTotal += calcItemCost(item);
+  });
+
+  const subtotalPerStudent = students > 0 ? (subtotalTotal / students) : 0;
+
+  const adminFeeTotal = subtotalTotal * ADMIN_FEE_MULTIPLIER;
+  const grandTotal = subtotalTotal + adminFeeTotal;
+
+  document.getElementById("subtotalPerStudent").textContent = subtotalPerStudent.toFixed(2);
+  document.getElementById("adminFeeTotal").textContent = adminFeeTotal.toFixed(2);
+  document.getElementById("total").textContent = grandTotal.toFixed(2);
+}
+
+calculate();
+</script>
+
+</body>
+</html>
