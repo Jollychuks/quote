@@ -55,6 +55,13 @@
       margin-top: 10px;
     }
 
+    .intro-text {
+      font-size: 0.98em;
+      line-height: 1.55;
+      color: #333;
+      margin-bottom: 18px;
+    }
+
     .inputs {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -146,7 +153,7 @@
     }
 
     input.price {
-      width: 210px;
+      width: 230px;
       background: #f0f0f0;
       color: #444;
       border: 1px solid #ccc;
@@ -213,7 +220,6 @@
       }
     }
 
-    /* Print: keep the same structure as desktop, reduce excessive wrapping */
     @media print {
       * {
         -webkit-print-color-adjust: exact;
@@ -278,7 +284,7 @@
       }
 
       input.price {
-        width: 200px !important;
+        width: 220px !important;
         font-size: 0.95em !important;
       }
 
@@ -322,9 +328,17 @@
 <div class="container">
   <h2>Special Program Cost Estimate Generator</h2>
 
+  <div class="intro-text">
+    This tool is designed to provide an initial 'ballpark' quote for prospective short-term program partners.
+    Please note that the prices generated here are estimates only. For the purposes of this calculation, we
+    assume participation of 10 students/participants. The final quote or proposal will include additional
+    details and cost adjustments based on specifics of the program as agreed upon between the partner and
+    the ODU English Language Center.
+  </div>
+
   <div class="inputs inputs-single">
     <div>
-      <label>Number of Students (minimum 10)</label><br>
+      <label for="students">Number of Students (minimum 10)</label><br>
       <input type="number" id="students" value="10" min="10" onchange="calculate()" oninput="calculate()">
       <div class="helper" id="groupHelper"></div>
     </div>
@@ -332,12 +346,12 @@
 
   <div class="inputs">
     <div>
-      <label>Start Date</label><br>
+      <label for="startDate">Start Date</label><br>
       <input type="date" id="startDate" onchange="calculate()">
     </div>
 
     <div>
-      <label>End Date</label><br>
+      <label for="endDate">End Date</label><br>
       <input type="date" id="endDate" onchange="calculate()">
     </div>
   </div>
@@ -351,26 +365,26 @@
   </div>
 
   <div class="divider"></div>
-  <h2>Hours of Instructions (group pricing)</h2>
+  <h2>Hours of Instruction (Group Pricing)</h2>
 
   <div class="section1 mandatory" id="instructionHoursSection">
     <div class="item" data-type="group-hours">
       <input type="checkbox" onchange="calculate()">
-      <span class="label hours-group" data-label-base="English Language Instruction (group)">
-        English Language hours of Instruction
+      <span class="label hours-group" data-label-base="Total Program Hours of English Language Instruction">
+        Total Program Hours of English Language Instruction
         <input class="hours" type="number" value="0" min="1" onchange="calculate()" oninput="calculate()">
       </span>
-      <input class="price" type="text" value="$280 per hour (per group of 10)" data-price="280" disabled>
+      <input class="price" type="text" value="$100 per hour, per student" data-price="100" disabled>
       <span>$0.00</span>
     </div>
 
     <div class="item" data-type="group-hours">
       <input type="checkbox" onchange="calculate()">
-      <span class="label hours-group" data-label-base="Academic Coursework (group)">
-        Academic Coursework hours of Instruction
+      <span class="label hours-group" data-label-base="Total Program Hours of Academic Content Area Instruction">
+        Total Program Hours of Academic Content Area Instruction
         <input class="hours" type="number" value="0" min="1" onchange="calculate()" oninput="calculate()">
       </span>
-      <input class="price" type="text" value="$280 per hour (per group of 10)" data-price="280" disabled>
+      <input class="price" type="text" value="$100 per hour, per student" data-price="100" disabled>
       <span>$0.00</span>
     </div>
   </div>
@@ -379,16 +393,16 @@
   <h2>Optional Costs</h2>
 
   <div class="section optional">
-    <div class="item physical-only" data-type="person-week">
+    <div class="item physical-only" data-type="person-10days">
       <input type="checkbox" onchange="calculate()">
-      <span class="label" data-label-base="Transportation Fee">Transportation fee</span>
-      <input class="price" type="text" value="$100 per week" data-price="100" disabled>
+      <span class="label" data-label-base="Transportation Fee">Transportation Fee</span>
+      <input class="price" type="text" value="$100 per student for every 10 days" data-price="100" disabled>
       <span>$0.00</span>
     </div>
 
     <div class="item physical-only" data-type="person-night" id="accFallSpringItem">
       <input type="checkbox" id="accFallSpringCheck" onchange="handleAccommodationToggle('fallSpring'); calculate();">
-      <span class="label" data-label-base="Fall/Spring off-Campus Accommodation">Fall/Spring off-Campus Accommodation</span>
+      <span class="label" data-label-base="Fall/Spring Off-Campus Accommodation">Fall/Spring Off-Campus Accommodation</span>
       <input class="price" type="text" value="$70 per night" data-price="70" disabled>
       <span>$0.00</span>
     </div>
@@ -407,10 +421,10 @@
       <span>$0.00</span>
     </div>
 
-    <div class="item physical-only" data-type="person-week">
+    <div class="item physical-only" data-type="person-10days">
       <input type="checkbox" onchange="calculate()">
       <span class="label" data-label-base="Activity Fee">Activity Fee</span>
-      <input class="price" type="text" value="$50 per week" data-price="50" disabled>
+      <input class="price" type="text" value="$50 per student for every 10 days" data-price="50" disabled>
       <span>$0.00</span>
     </div>
   </div>
@@ -426,9 +440,8 @@
 
 <script>
 const ADMIN_FEE_MULTIPLIER = 0.6;
-
 const GROUP_SIZE = 10;
-const GROUP_RATE_PER_HOUR = 280;
+const INSTRUCTION_RATE_PER_HOUR_PER_STUDENT = 100;
 
 window.__hasValidDates = false;
 let __dateGateAttached = false;
@@ -465,10 +478,12 @@ function attachDateGateOnce() {
 function isSummerProgram(start, end) {
   const y1 = start.getFullYear();
   const y2 = end.getFullYear();
+
   if (y1 !== y2) return false;
 
-  const summerStart = new Date(y1, 5, 1);  // Jun 1
-  const summerEnd = new Date(y1, 7, 31);   // Aug 31
+  const summerStart = new Date(y1, 4, 15);
+  const summerEnd = new Date(y1, 7, 15);
+
   return start >= summerStart && end <= summerEnd;
 }
 
@@ -489,13 +504,6 @@ function handleAccommodationToggle(which) {
   if (which === "summer" && summerCheck.checked) fallSpringCheck.checked = false;
 }
 
-/*
-  Update accommodation visibility:
-  - No valid dates: show both (so user knows options exist)
-  - Valid dates:
-      * Summer: show Summer only
-      * Not summer: show Fall/Spring only
-*/
 function updateAccommodationVisibility(isSummer, hasValidDates) {
   const fallSpringItem = document.getElementById("accFallSpringItem");
   const summerItem = document.getElementById("accSummerItem");
@@ -546,7 +554,13 @@ function updateGroupHelper(students, groups) {
     '<div class="line"><b>Number of groups:</b> ' +
       groups + ' <span class="nowrap">(' + GROUP_SIZE + ' students per group)</span></div>' +
     '<div class="line"><b>Capacity:</b> ' +
-      capacity + ' students</div>';
+      capacity + ' students</div>' +
+    '<div class="line"><b>Term assumptions:</b> Fall/Spring is August 20 to May 14. Summer is May 15 to August 15.</div>';
+}
+
+function calculateTenDayBlocks(days) {
+  if (days <= 0) return 0;
+  return Math.ceil(days / 10);
 }
 
 function calculate() {
@@ -569,7 +583,6 @@ function calculate() {
 
   let days = 0;
   let nights = 0;
-  let weeks = 0;
 
   let hasValidDates = false;
   let summer = false;
@@ -583,10 +596,11 @@ function calculate() {
 
       days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
       nights = Math.max(days - 1, 0);
-      weeks = Math.max(1, Math.ceil(days / 7));
+
+      const tenDayBlocks = calculateTenDayBlocks(days);
 
       document.getElementById("dateSummary").textContent =
-        days + " day(s), " + nights + " night(s), " + weeks + " week(s)";
+        days + " day(s), " + nights + " night(s), " + tenDayBlocks + " ten-day block(s)";
 
       summer = isSummerProgram(start, end);
       showDateRequiredMessage(false);
@@ -611,7 +625,13 @@ function calculate() {
     if (!item) return;
 
     const type = item.dataset.type;
-    if (type === "person" || type === "person-day" || type === "person-night" || type === "person-week") {
+    if (
+      type === "person" ||
+      type === "person-day" ||
+      type === "person-night" ||
+      type === "person-week" ||
+      type === "person-10days"
+    ) {
       labelEl.textContent = base + " for " + studentText;
     }
   });
@@ -633,21 +653,29 @@ function calculate() {
 
     let cost = 0;
 
-    if (type === "person-week" && days > 0) cost = rate * students * weeks;
-    if (type === "person-night" && days > 0) cost = rate * students * nights;
-    if (type === "person-day" && days > 0) cost = rate * students * days;
+    if (type === "person-night" && days > 0) {
+      cost = rate * students * nights;
+    }
+
+    if (type === "person-day" && days > 0) {
+      cost = rate * students * days;
+    }
+
+    if (type === "person-10days" && days > 0) {
+      const tenDayBlocks = calculateTenDayBlocks(days);
+      cost = rate * students * tenDayBlocks;
+    }
 
     if (type === "group-hours") {
       const hoursInput = item.querySelector("input.hours");
       const hours = parseInt(hoursInput ? hoursInput.value : "0", 10) || 0;
 
-      cost = GROUP_RATE_PER_HOUR * groups * hours;
+      cost = INSTRUCTION_RATE_PER_HOUR_PER_STUDENT * students * hours;
 
       if (priceEl) {
-        priceEl.dataset.price = String(GROUP_RATE_PER_HOUR);
+        priceEl.dataset.price = String(INSTRUCTION_RATE_PER_HOUR_PER_STUDENT);
         priceEl.value =
-          "$" + GROUP_RATE_PER_HOUR.toFixed(2) +
-          " per hour (per group of " + GROUP_SIZE + ")";
+          "$" + INSTRUCTION_RATE_PER_HOUR_PER_STUDENT.toFixed(2) + " per hour, per student";
       }
     }
 
@@ -666,7 +694,6 @@ function calculate() {
   });
 
   const subtotalPerStudent = students > 0 ? (subtotalTotal / students) : 0;
-
   const adminFeeTotal = subtotalTotal * ADMIN_FEE_MULTIPLIER;
   const grandTotal = subtotalTotal + adminFeeTotal;
 
